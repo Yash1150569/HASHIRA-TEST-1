@@ -1,0 +1,94 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+string addBig(const string &a, const string &b) {
+    string res;
+    int carry = 0;
+    int i = (int)a.size() - 1, j = (int)b.size() - 1;
+    while (i >= 0 || j >= 0 || carry) {
+        int sum = carry;
+        if (i >= 0) sum += a[i--] - '0';
+        if (j >= 0) sum += b[j--] - '0';
+        res.push_back(char('0' + (sum % 10)));
+        carry = sum / 10;
+    }
+    reverse(res.begin(), res.end());
+    return res;
+}
+
+string subBig(const string &a, const string &b) {
+    string res;
+    int i = (int)a.size() - 1, j = (int)b.size() - 1;
+    int borrow = 0;
+    while (i >= 0) {
+        int diff = (a[i] - '0') - borrow - (j >= 0 ? (b[j--] - '0') : 0);
+        if (diff < 0) { diff += 10; borrow = 1; }
+        else borrow = 0;
+        res.push_back(char('0' + diff));
+        i--;
+    }
+    while (res.size() > 1 && res.back() == '0') res.pop_back();
+    reverse(res.begin(), res.end());
+    return res;
+}
+
+string mulBig(const string &a, const string &b) {
+    vector<int> res(a.size() + b.size(), 0);
+    for (int i = a.size() - 1; i >= 0; i--) {
+        for (int j = b.size() - 1; j >= 0; j--) {
+            int mul = (a[i] - '0') * (b[j] - '0');
+            int sum = res[i + j + 1] + mul;
+            res[i + j + 1] = sum % 10;
+            res[i + j] += sum / 10;
+        }
+    }
+    string s;
+    for (int c : res) if (!(s.empty() && c == 0)) s.push_back(char('0' + c));
+    return s.empty() ? "0" : s;
+}
+
+string toDecimal(const string &value, int base) {
+    string result = "0";
+    string b = to_string(base);
+    for (char c : value) {
+        int digit = isdigit(c) ? c - '0' : 10 + (tolower(c) - 'a');
+        result = mulBig(result, b);
+        result = addBig(result, to_string(digit));
+    }
+    return result;
+}
+
+int main() {
+    int n = 10, k = 7;
+    vector<pair<int,string>> entries = {
+        {6, "13444211440455345511"},
+        {15,"aed7015a346d635"},
+        {15,"6aeeb69631c227c"},
+        {16,"e1b5e05623d881f"},
+        {8, "316034514573652620673"},
+        {3, "2122212201122002221120200210011020220200"},
+        {3, "20120221122211000100210021102001201112121"},
+        {6, "20220554335330240002224253"},
+        {12,"45153788322a1255483"},
+        {7, "1101613130313526312514143"}
+    };
+
+    vector<string> roots;
+    for (auto &e : entries) roots.push_back(toDecimal(e.second, e.first));
+
+    int m = k - 1;
+    vector<string> coeffs = {"1"};
+
+    for (int i = 0; i < m; i++) {
+        string r = roots[i];
+        vector<string> newCoeffs(coeffs.size() + 1, "0");
+        for (int j = 0; j < (int)coeffs.size(); j++) {
+            newCoeffs[j] = addBig(newCoeffs[j], coeffs[j]);
+            newCoeffs[j + 1] = subBig(newCoeffs[j + 1], mulBig(coeffs[j], r));
+        }
+        coeffs = newCoeffs;
+    }
+
+    for (auto &c : coeffs) cout << c << " ";
+    cout << "\n";
+}
